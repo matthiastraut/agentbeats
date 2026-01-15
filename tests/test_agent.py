@@ -196,4 +196,36 @@ async def test_message(agent, streaming):
     assert events, "Agent should respond with at least one event"
     assert not all_errors, f"Message validation failed:\n" + "\n".join(all_errors)
 
-# Add your custom tests here
+# Custom tests for Forecasting Evaluator
+
+@pytest.mark.asyncio
+async def test_invalid_request(agent):
+    """Test that the agent rejects requests with missing roles/config."""
+    # Request missing 'forecaster' role
+    invalid_payload = {
+        "participants": {},
+        "config": {"num_rounds": 1}
+    }
+    
+    import json
+    events = await send_text_message(json.dumps(invalid_payload), agent)
+    
+    # Check for rejection or failure
+    status_found = False
+    for event in events:
+        if isinstance(event, tuple): # (task, update)
+            task, update = event
+            if task.status.state in {TaskState.rejected, TaskState.failed}:
+                status_found = True
+                assert "Missing roles" in str(task.status.message.parts[0].root.text)
+    
+    assert status_found, "Agent should have rejected the request with missing roles"
+
+@pytest.mark.asyncio
+async def test_evaluator_card_skills(agent):
+    """Verify that the evaluator advertises the correct skills."""
+    response = httpx.get(f"{agent}/.well-known/agent-card.json")
+    card = response.json()
+    
+    skill_names = [s['name'] for s in card['skills']]
+    assert "Forecasting Evaluator" in skill_names

@@ -24,16 +24,16 @@ def main():
     # See: https://a2a-protocol.org/latest/tutorials/python/3-agent-skills-and-card/
     
     skill = AgentSkill(
-        id="",
-        name="",
-        description="",
-        tags=[],
+        id="forecasting-evaluation",
+        name="Forecasting Evaluator",
+        description="Generates time-series data and evaluates forecasting performance of other agents.",
+        tags=["forecasting", "evaluation", "time-series"],
         examples=[]
     )
 
     agent_card = AgentCard(
-        name="",
-        description="",
+        name="Forecasting Evaluation Host",
+        description="A host agent that orchestrates time-series forecasting evaluations between participant agents.",
         url=args.card_url or f"http://{args.host}:{args.port}/",
         version='1.0.0',
         default_input_modes=['text'],
