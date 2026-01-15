@@ -5,7 +5,7 @@ cmd = "python src/server.py --host 127.0.0.1 --port 9009"
 [[participants]]
 role = "forecaster"
 endpoint = "http://127.0.0.1:9010"
-cmd = "python src/mock_forecaster.py --port 9010"
+cmd = "python ../agentbeats-purple/src/server.py --port 9010"
 
 [config]
 num_rounds = 1

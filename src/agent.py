@@ -123,7 +123,7 @@ class Agent:
                 
                 if len(forecast_values) != len(df_solution):
                     error_msg = f"Expected {len(df_solution)} values, but got {len(forecast_values)}"
-                    rmse = -1.0
+                    rmse = 10_000
                 else:
                     # Calculate RMSE using numpy
                     actual = df_solution.values
