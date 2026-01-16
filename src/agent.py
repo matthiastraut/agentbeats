@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import re
 import statsmodels.api as sm
+from statsmodels.tsa.stattools import adfuller
 from pydantic import BaseModel, HttpUrl, ValidationError
 
 from a2a.server.tasks import TaskUpdater
@@ -29,24 +30,40 @@ def generate_forecasting_problem():
     
     df = pd.DataFrame(index=idx, columns=[f"series{i}" for i in range(num_exog_series)], dtype=float)
     
-    ar_terms = np.random.normal(0, 0.5, size=np.random.randint(1, 3))
-    coefs = np.random.normal(0, 1, size=num_exog_series)
-    
-    for i in range(num_exog_series):
-        sigma = np.random.normal(0, 1, size=len(df))
-        df.iloc[:, i] = sigma.copy()
-        for t in range(len(ar_terms), len(df)):
-            for k in range(len(ar_terms)):
-                df.iloc[t, i] += ar_terms[k] * df.iloc[t-k-1, i]
+    non_stationary = True
 
-    df['endog'] = (coefs @ df.iloc[:, :num_exog_series].T).values + np.random.normal(0, 0.5, size=len(df))
-    
+    # Generate exogenous series
+    while non_stationary:
+        ar_terms = np.random.normal(0, 0.5, size=np.random.randint(1, 5))
+        ma_terms = np.random.normal(0, 0.5, size=np.random.randint(1, 5))
+        coefs = np.random.normal(0, 1, size=num_exog_series)
+        
+        for i in range(num_exog_series):
+            sigma = np.random.normal(0, 1, size=len(df))
+            df.iloc[:, i] = sigma.copy()
+            for t in range(len(ar_terms), len(df)):
+                for k in range(len(ar_terms)):
+                    df.iloc[t, i] += ar_terms[k] * df.iloc[t-k-1, i]
+                for l in range(1, len(ma_terms)):
+                    df.iloc[t, i] += ma_terms[l-1] * sigma[t-l]
+
+        df['endog'] = (coefs @ df.iloc[:, :num_exog_series].T).values + np.random.normal(0, 0.5, size=len(df))
+
+        # Check stationarity
+        criterion = False
+        for col in df.columns:
+            adfuller_result = adfuller(df[col])
+            if adfuller_result[1] > 0.05:
+                criterion = True
+        
+        non_stationary = criterion
+        
     # Hide the last 5 year's worth of endog data
     test_periods = 5*periods_per_year[freq_rand]
     df_provided = df.copy()
     df_provided.iloc[-test_periods:, df_provided.columns.get_loc('endog')] = np.nan
     df_solution = df['endog'].iloc[-test_periods:]
-    
+
     return df_provided, df_solution
 
 
